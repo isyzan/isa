@@ -1,0 +1,37 @@
+name: Automated Server Collection
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # Каждые 2 часа
+  workflow_dispatch:        # Ручной запуск
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Run ACS
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        python acs_core.py
+        
+    - name: Commit and push changes
+      run: |
+        git config --local user.name "ACS Bot"
+        git config --local user.email "acs-bot@localhost"
+        git add collected_servers/ history/ reports/
+        git diff --staged --quiet || git commit -m "ACS auto-collection $(date)"
+        git push
